@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CNN Visualizer - Interactive Neural Network Explorer</title>
-    <meta name="description" content="Learn how Convolutional Neural Networks work through interactive visualization. Build, train, and see feature maps in real-time.">
+    <meta name="description" content="Learn how Convolutional Neural Networks work through interactive visualization. Explore convolution, pooling, and more.">
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- TensorFlow.js -->
@@ -46,229 +46,62 @@
             </div>
         </header>
 
-        <!-- Main Content -->
+        <!-- Main Content with Tabs -->
         <main class="main-content">
-            <!-- Left Sidebar - Layer Palette -->
-            <aside class="sidebar layer-palette">
-                <div class="sidebar-header">
-                    <h2>Layer Palette</h2>
-                    <p class="sidebar-hint">Click to add layers</p>
+            <!-- Left Sidebar - Tab Navigation -->
+            <nav class="tab-nav">
+                <div class="tab-nav-header">
+                    <h2>Learn CNN</h2>
                 </div>
-                <div class="layer-buttons">
-                    <button class="layer-btn" data-layer="conv2d" data-tooltip="Extracts features using learnable filters. Detects edges, textures, and patterns.">
-                        <div class="layer-icon conv-icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <rect x="4" y="4" width="14" height="14" rx="2" fill="currentColor" opacity="0.8"/>
-                                <rect x="22" y="4" width="14" height="14" rx="2" fill="currentColor" opacity="0.6"/>
-                                <rect x="4" y="22" width="14" height="14" rx="2" fill="currentColor" opacity="0.6"/>
-                                <rect x="22" y="22" width="14" height="14" rx="2" fill="currentColor" opacity="0.4"/>
-                            </svg>
-                        </div>
-                        <span class="layer-name">Conv2D</span>
-                        <span class="layer-desc">Feature extraction</span>
+                <div class="tab-buttons">
+                    <button class="tab-btn active" data-tab="convolution">
+                        <span class="tab-icon">🔲</span>
+                        <span class="tab-label">Convolution</span>
+                        <span class="tab-desc">Kernels & Activation</span>
                     </button>
-                    <button class="layer-btn" data-layer="maxpool" data-tooltip="Reduces spatial size by keeping only the maximum values. Helps focus on the most important features.">
-                        <div class="layer-icon pool-icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <rect x="4" y="4" width="32" height="32" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
-                                <rect x="10" y="10" width="8" height="8" rx="1" fill="currentColor"/>
-                                <rect x="22" y="10" width="8" height="8" rx="1" fill="currentColor" opacity="0.4"/>
-                                <rect x="10" y="22" width="8" height="8" rx="1" fill="currentColor" opacity="0.4"/>
-                                <rect x="22" y="22" width="8" height="8" rx="1" fill="currentColor" opacity="0.4"/>
-                            </svg>
-                        </div>
-                        <span class="layer-name">MaxPooling</span>
-                        <span class="layer-desc">Downsampling</span>
+                    <button class="tab-btn" data-tab="pooling">
+                        <span class="tab-icon">📊</span>
+                        <span class="tab-label">Pooling</span>
+                        <span class="tab-desc">Downsampling</span>
                     </button>
-                    <button class="layer-btn" data-layer="flatten" data-tooltip="Converts the 2D feature maps into a 1D vector to connect to Dense layers.">
-                        <div class="layer-icon flatten-icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <rect x="4" y="8" width="10" height="24" rx="2" fill="currentColor" opacity="0.6"/>
-                                <path d="M18 20h8" stroke="currentColor" stroke-width="2" stroke-dasharray="2 2"/>
-                                <rect x="30" y="4" width="6" height="32" rx="2" fill="currentColor"/>
-                            </svg>
-                        </div>
-                        <span class="layer-name">Flatten</span>
-                        <span class="layer-desc">2D → 1D</span>
+                    <button class="tab-btn" data-tab="flatten-dense">
+                        <span class="tab-icon">═══</span>
+                        <span class="tab-label">Flatten & Dense</span>
+                        <span class="tab-desc">Fully Connected</span>
                     </button>
-                    <button class="layer-btn" data-layer="dense" data-tooltip="Fully connected layer where every neuron connects to all neurons in the previous layer. Used for classification.">
-                        <div class="layer-icon dense-icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <circle cx="10" cy="10" r="4" fill="currentColor"/>
-                                <circle cx="10" cy="20" r="4" fill="currentColor"/>
-                                <circle cx="10" cy="30" r="4" fill="currentColor"/>
-                                <circle cx="30" cy="15" r="4" fill="currentColor"/>
-                                <circle cx="30" cy="25" r="4" fill="currentColor"/>
-                                <path d="M14 10l12 5M14 10l12 15M14 20l12-5M14 20l12 5M14 30l12-15M14 30l12-5" stroke="currentColor" stroke-width="1" opacity="0.5"/>
-                            </svg>
-                        </div>
-                        <span class="layer-name">Dense</span>
-                        <span class="layer-desc">Fully connected</span>
+                    <button class="tab-btn" data-tab="dropout">
+                        <span class="tab-icon">⚫⚪</span>
+                        <span class="tab-label">Dropout</span>
+                        <span class="tab-desc">Regularization</span>
                     </button>
-                    <button class="layer-btn" data-layer="dropout" data-tooltip="Randomly disables neurons during training to prevent overfitting and improve generalization.">
-                        <div class="layer-icon dropout-icon">
-                            <svg viewBox="0 0 40 40" fill="none">
-                                <circle cx="10" cy="10" r="4" fill="currentColor"/>
-                                <circle cx="20" cy="10" r="4" fill="currentColor" opacity="0.3"/>
-                                <circle cx="30" cy="10" r="4" fill="currentColor"/>
-                                <circle cx="10" cy="20" r="4" fill="currentColor" opacity="0.3"/>
-                                <circle cx="20" cy="20" r="4" fill="currentColor"/>
-                                <circle cx="30" cy="20" r="4" fill="currentColor" opacity="0.3"/>
-                                <circle cx="10" cy="30" r="4" fill="currentColor"/>
-                                <circle cx="20" cy="30" r="4" fill="currentColor"/>
-                                <circle cx="30" cy="30" r="4" fill="currentColor" opacity="0.3"/>
-                            </svg>
-                        </div>
-                        <span class="layer-name">Dropout</span>
-                        <span class="layer-desc">Regularization</span>
+                    <div class="tab-divider"></div>
+                    <button class="tab-btn highlight" data-tab="cnn-builder">
+                        <span class="tab-icon">🧪</span>
+                        <span class="tab-label">Full CNN</span>
+                        <span class="tab-desc">Build & Train</span>
                     </button>
                 </div>
-                <div class="preset-section">
-                    <h3>Quick Presets</h3>
-                    <button class="preset-btn" data-preset="simple">Simple CNN</button>
-                    <button class="preset-btn" data-preset="lenet">LeNet-5</button>
-                </div>
-            </aside>
+            </nav>
 
-            <!-- Center - Network Canvas -->
-            <section class="network-section">
-                <div class="network-header">
-                    <h2>Network Architecture</h2>
-                    <div class="network-actions">
-                        <button class="action-btn" id="clear-network" title="Clear all layers">
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-                            </svg>
-                            Clear
-                        </button>
-                    </div>
+            <!-- Tab Content Area -->
+            <section class="tab-content-area">
+                <div class="tab-content active" id="tab-convolution">
+                    <!-- Convolution Explorer will be rendered here by JS -->
+                    <div class="loading-message">Loading Convolution Explorer...</div>
                 </div>
-                <div class="network-container">
-                    <div class="network-canvas" id="network-canvas">
-                        <div class="input-layer layer-card" data-layer-type="input">
-                            <div class="layer-visual input-visual">
-                                <canvas id="input-preview" width="56" height="56"></canvas>
-                            </div>
-                            <div class="layer-info">
-                                <span class="layer-title">Input</span>
-                                <span class="layer-shape" id="input-shape">28×28×1</span>
-                            </div>
-                        </div>
-                        <div class="layer-connector">
-                            <div class="connector-line"></div>
-                            <div class="connector-arrow"></div>
-                        </div>
-                        <div class="architecture-layers" id="architecture-layers">
-                            <!-- Dynamic layers will be added here -->
-                            <div class="empty-state" id="empty-state">
-                                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                                    <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity="0.5"/>
-                                    <path d="M24 16v16M16 24h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                                </svg>
-                                <p>Click layers from the palette to build your network</p>
-                            </div>
-                        </div>
-                        <div class="layer-connector output-connector" style="display: none;">
-                            <div class="connector-line"></div>
-                            <div class="connector-arrow"></div>
-                        </div>
-                        <div class="output-layer layer-card" data-layer-type="output" style="display: none;">
-                            <div class="layer-visual output-visual">
-                                <div class="output-bars" id="output-bars">
-                                    <!-- Output probability bars -->
-                                </div>
-                            </div>
-                            <div class="layer-info">
-                                <span class="layer-title">Output</span>
-                                <span class="layer-shape" id="output-shape">10 classes</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="tab-content" id="tab-pooling">
+                    <div class="loading-message">Loading Pooling Explorer...</div>
                 </div>
-                <!-- Feature Maps Display -->
-                <div class="feature-maps-section" id="feature-maps-section" style="display: none;">
-                    <h3>Feature Maps</h3>
-                    <div class="feature-maps-container" id="feature-maps-container">
-                        <!-- Feature maps will be rendered here -->
-                    </div>
+                <div class="tab-content" id="tab-flatten-dense">
+                    <div class="loading-message">Loading Flatten & Dense Explorer...</div>
+                </div>
+                <div class="tab-content" id="tab-dropout">
+                    <div class="loading-message">Loading Dropout Explorer...</div>
+                </div>
+                <div class="tab-content" id="tab-cnn-builder">
+                    <div class="loading-message">Loading CNN Builder...</div>
                 </div>
             </section>
-
-            <!-- Right Sidebar - Training Controls -->
-            <aside class="sidebar training-panel">
-                <div class="sidebar-header">
-                    <h2>Training</h2>
-                </div>
-                
-                <div class="training-controls">
-                    <div class="control-group">
-                        <label for="learning-rate">Learning Rate</label>
-                        <div class="range-input">
-                            <input type="range" id="learning-rate" min="-4" max="-1" step="0.1" value="-2">
-                            <span class="range-value" id="lr-value">0.01</span>
-                        </div>
-                    </div>
-                    <div class="control-group">
-                        <label for="epochs">Epochs</label>
-                        <input type="number" id="epochs" value="5" min="1" max="50">
-                    </div>
-                    <div class="control-group">
-                        <label for="batch-size">Batch Size</label>
-                        <select id="batch-size">
-                            <option value="16">16</option>
-                            <option value="32" selected>32</option>
-                            <option value="64">64</option>
-                            <option value="128">128</option>
-                        </select>
-                    </div>
-                    <button class="train-btn" id="train-btn">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                            <polygon points="5,3 17,10 5,17"/>
-                        </svg>
-                        Train Network
-                    </button>
-                    <button class="stop-btn" id="stop-btn" style="display: none;">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                            <rect x="4" y="4" width="12" height="12" rx="2"/>
-                        </svg>
-                        Stop Training
-                    </button>
-                </div>
-
-                <div class="training-stats">
-                    <div class="stat-card">
-                        <span class="stat-label">Epoch</span>
-                        <span class="stat-value" id="current-epoch">0 / 0</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-label">Loss</span>
-                        <span class="stat-value" id="current-loss">—</span>
-                    </div>
-                    <div class="stat-card">
-                        <span class="stat-label">Accuracy</span>
-                        <span class="stat-value" id="current-accuracy">—</span>
-                    </div>
-                </div>
-
-                <div class="chart-section">
-                    <h3>Training Progress</h3>
-                    <div class="chart-container">
-                        <canvas id="loss-chart" width="280" height="120"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="accuracy-chart" width="280" height="120"></canvas>
-                    </div>
-                </div>
-
-                <div class="sample-images-section">
-                    <h3>Sample Images</h3>
-                    <div class="sample-grid" id="sample-grid">
-                        <!-- Sample images will be shown here -->
-                    </div>
-                    <button class="secondary-btn" id="load-samples">Load Samples</button>
-                </div>
-            </aside>
         </main>
 
         <!-- Footer -->
@@ -277,7 +110,7 @@
                 <div class="progress-bar">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
-                <span class="progress-text" id="progress-text">Ready to train</span>
+                <span class="progress-text" id="progress-text">Ready to explore</span>
             </div>
         </footer>
     </div>

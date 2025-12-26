@@ -199,25 +199,29 @@ export class DataLoader {
             indices.push(Math.floor(Math.random() * totalImages));
         }
 
-        return tf.tidy(() => {
-            const samples = [];
-            for (const idx of indices) {
-                const image = this.trainData.images.slice([idx, 0, 0, 0], [1, -1, -1, -1]).squeeze();
-                const label = this.trainData.labels.slice([idx, 0], [1, -1]).argMax(1).dataSync()[0];
-                samples.push({ image, label, index: idx });
-            }
-            return samples;
-        });
+        // Don't use tf.tidy here since we need to return tensors that will be used later
+        // The caller is responsible for disposing these tensors
+        const samples = [];
+        for (const idx of indices) {
+            const image = this.trainData.images.slice([idx, 0, 0, 0], [1, -1, -1, -1]).squeeze();
+            const labelTensor = this.trainData.labels.slice([idx, 0], [1, -1]).argMax(1);
+            const label = labelTensor.dataSync()[0];
+            labelTensor.dispose(); // Only dispose the label tensor, not the image
+            samples.push({ image, label, index: idx });
+        }
+        return samples;
     }
 
     getImage(index) {
         if (!this.trainData) return null;
 
-        return tf.tidy(() => {
-            const image = this.trainData.images.slice([index, 0, 0, 0], [1, -1, -1, -1]).squeeze();
-            const label = this.trainData.labels.slice([index, 0], [1, -1]).argMax(1).dataSync()[0];
-            return { image, label };
-        });
+        // Don't use tf.tidy here since we need to return the image tensor
+        // The caller is responsible for disposing this tensor
+        const image = this.trainData.images.slice([index, 0, 0, 0], [1, -1, -1, -1]).squeeze();
+        const labelTensor = this.trainData.labels.slice([index, 0], [1, -1]).argMax(1);
+        const label = labelTensor.dataSync()[0];
+        labelTensor.dispose(); // Only dispose the label tensor, not the image
+        return { image, label };
     }
 
     getBatch(batchSize, isTest = false) {

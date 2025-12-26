@@ -245,35 +245,47 @@ export class ModelEngine {
     getActivations(input) {
         if (!this.model || this.activationModels.length === 0) return [];
 
-        return tf.tidy(() => {
-            let inputTensor = input;
-            if (!(input instanceof tf.Tensor)) {
-                inputTensor = tf.tensor(input);
+        // Don't use tf.tidy() here since we return tensors that need to survive
+        // The caller is responsible for disposing these tensors
+        let inputTensor = input;
+        let createdInput = false;
+
+        if (!(input instanceof tf.Tensor)) {
+            inputTensor = tf.tensor(input);
+            createdInput = true;
+        }
+
+        let expandedInput = inputTensor;
+        if (inputTensor.rank === 3) {
+            expandedInput = inputTensor.expandDims(0);
+        }
+
+        const activations = [];
+
+        for (const { model, layerIndex, layerName, layerType } of this.activationModels) {
+            try {
+                const activation = model.predict(expandedInput);
+                activations.push({
+                    layerIndex,
+                    layerName,
+                    layerType,
+                    tensor: activation,
+                    shape: activation.shape
+                });
+            } catch (e) {
+                console.warn(`Could not get activation for layer ${layerName}:`, e);
             }
+        }
 
-            if (inputTensor.rank === 3) {
-                inputTensor = inputTensor.expandDims(0);
-            }
+        // Dispose intermediate tensors we created
+        if (expandedInput !== inputTensor) {
+            expandedInput.dispose();
+        }
+        if (createdInput) {
+            inputTensor.dispose();
+        }
 
-            const activations = [];
-
-            for (const { model, layerIndex, layerName, layerType } of this.activationModels) {
-                try {
-                    const activation = model.predict(inputTensor);
-                    activations.push({
-                        layerIndex,
-                        layerName,
-                        layerType,
-                        tensor: activation,
-                        shape: activation.shape
-                    });
-                } catch (e) {
-                    console.warn(`Could not get activation for layer ${layerName}:`, e);
-                }
-            }
-
-            return activations;
-        });
+        return activations;
     }
 
     getModelSummary() {

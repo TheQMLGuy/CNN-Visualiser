@@ -1,29 +1,38 @@
 /**
  * CNN Visualizer - Main Application
- * Interactive browser-based CNN visualization tool
+ * Interactive browser-based CNN visualization tool with tabbed interface
  */
 
-import { LAYER_TYPES, DATASETS, PRESETS } from './utils/constants.js';
+import { DATASETS } from './utils/constants.js';
 import { TooltipManager } from './utils/tooltips.js';
-import { ArchitectureBuilder } from './ui/architectureBuilder.js';
-import { ModelEngine } from './ml/modelEngine.js';
 import { DataLoader } from './ml/dataLoader.js';
-import { FeatureMapRenderer } from './visualization/featureMapRenderer.js';
-import { TrainingCharts } from './visualization/trainingCharts.js';
-import { ImageRenderer } from './visualization/imageRenderer.js';
+import { ConvolutionExplorer } from './tabs/convolutionExplorer.js';
+import { PoolingExplorer } from './tabs/poolingExplorer.js';
+import { FlattenDenseExplorer } from './tabs/flattenDenseExplorer.js';
+import { DropoutExplorer } from './tabs/dropoutExplorer.js';
+import { CNNBuilder } from './tabs/cnnBuilder.js';
 
 class CNNVisualizer {
     constructor() {
-        this.modelEngine = new ModelEngine();
         this.dataLoader = new DataLoader();
         this.tooltipManager = null;
-        this.architectureBuilder = null;
-        this.featureMapRenderer = null;
-        this.trainingCharts = null;
 
         this.currentDataset = 'mnist';
-        this.isTraining = false;
-        this.selectedImageIndex = 0;
+        this.currentTab = 'convolution';
+
+        // Tab instances
+        this.tabs = {
+            convolution: null,
+            pooling: null,
+            'flatten-dense': null,
+            dropout: null,
+            'cnn-builder': null
+        };
+
+        // Shared state between tabs
+        this.sharedState = {
+            convolutionImage: null
+        };
 
         this.init();
     }
@@ -33,15 +42,17 @@ class CNNVisualizer {
         await tf.ready();
         this.updateTFStatus(true);
 
-        // Initialize components
+        // Initialize tooltips
         this.initTooltips();
-        this.initArchitectureBuilder();
-        this.initCharts();
-        this.initFeatureMaps();
+
+        // Setup event listeners
         this.initEventListeners();
 
         // Load initial dataset
         await this.loadDataset('mnist');
+
+        // Initialize the first tab
+        this.initTab('convolution');
 
         console.log('CNN Visualizer initialized');
     }
@@ -63,328 +74,102 @@ class CNNVisualizer {
         this.tooltipManager = new TooltipManager();
     }
 
-    initArchitectureBuilder() {
-        const container = document.getElementById('architecture-layers');
-
-        this.architectureBuilder = new ArchitectureBuilder(container, (layers) => {
-            this.onArchitectureChange(layers);
-        });
-    }
-
-    initCharts() {
-        const lossCanvas = document.getElementById('loss-chart');
-        const accuracyCanvas = document.getElementById('accuracy-chart');
-
-        this.trainingCharts = new TrainingCharts(lossCanvas, accuracyCanvas);
-    }
-
-    initFeatureMaps() {
-        const container = document.getElementById('feature-maps-container');
-        this.featureMapRenderer = new FeatureMapRenderer(container);
-    }
-
     initEventListeners() {
-        // Layer buttons
-        document.querySelectorAll('.layer-btn').forEach(btn => {
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                const layerType = btn.dataset.layer;
-                this.architectureBuilder.addLayer(layerType);
+                const tabId = btn.dataset.tab;
+                this.switchTab(tabId);
             });
-        });
-
-        // Preset buttons
-        document.querySelectorAll('.preset-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const presetName = btn.dataset.preset;
-                this.architectureBuilder.loadPreset(presetName);
-            });
-        });
-
-        // Clear network button
-        document.getElementById('clear-network').addEventListener('click', () => {
-            this.architectureBuilder.clear();
-            this.featureMapRenderer.clear();
         });
 
         // Dataset selector
         document.getElementById('dataset').addEventListener('change', async (e) => {
             await this.loadDataset(e.target.value);
+            // Reinitialize current tab with new data
+            this.initTab(this.currentTab, true);
+        });
+    }
+
+    switchTab(tabId) {
+        // Update nav buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabId);
         });
 
-        // Learning rate slider
-        const lrSlider = document.getElementById('learning-rate');
-        const lrValue = document.getElementById('lr-value');
-
-        lrSlider.addEventListener('input', () => {
-            const lr = Math.pow(10, parseFloat(lrSlider.value));
-            lrValue.textContent = lr.toFixed(lr < 0.01 ? 4 : 3);
+        // Update content visibility
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.toggle('active', content.id === `tab-${tabId}`);
         });
 
-        // Train button
-        document.getElementById('train-btn').addEventListener('click', () => {
-            this.startTraining();
-        });
+        this.currentTab = tabId;
 
-        // Stop button
-        document.getElementById('stop-btn').addEventListener('click', () => {
-            this.stopTraining();
-        });
+        // Initialize tab if not already
+        if (!this.tabs[tabId]) {
+            this.initTab(tabId);
+        } else {
+            // Call onActivate if the tab has it
+            if (this.tabs[tabId].onActivate) {
+                this.tabs[tabId].onActivate();
+            }
+        }
+    }
 
-        // Load samples button
-        document.getElementById('load-samples').addEventListener('click', () => {
-            this.loadSampleImages();
-        });
+    initTab(tabId, force = false) {
+        const container = document.getElementById(`tab-${tabId}`);
+        if (!container) return;
+
+        // Dispose existing tab if forcing reinit
+        if (force && this.tabs[tabId]) {
+            if (this.tabs[tabId].dispose) {
+                this.tabs[tabId].dispose();
+            }
+            this.tabs[tabId] = null;
+        }
+
+        // Skip if already initialized
+        if (this.tabs[tabId]) return;
+
+        switch (tabId) {
+            case 'convolution':
+                this.tabs.convolution = new ConvolutionExplorer(container, this.dataLoader);
+                break;
+            case 'pooling':
+                this.tabs.pooling = new PoolingExplorer(container, this.dataLoader, this.sharedState);
+                break;
+            case 'flatten-dense':
+                this.tabs['flatten-dense'] = new FlattenDenseExplorer(container, this.dataLoader);
+                break;
+            case 'dropout':
+                this.tabs.dropout = new DropoutExplorer(container);
+                break;
+            case 'cnn-builder':
+                this.tabs['cnn-builder'] = new CNNBuilder(container, this.dataLoader);
+                break;
+        }
+
+        this.showStatus(`${tabId.replace('-', ' ')} loaded`);
     }
 
     async loadDataset(datasetName) {
         this.currentDataset = datasetName;
 
-        const progressText = document.getElementById('progress-text');
-        progressText.textContent = `Loading ${datasetName.toUpperCase()} dataset...`;
+        this.showStatus(`Loading ${datasetName.toUpperCase()} dataset...`);
 
         try {
             await this.dataLoader.loadDataset(datasetName);
-
-            // Update input shape display
-            this.architectureBuilder.setDataset(datasetName);
-
-            // Update output shape
-            const outputShape = document.getElementById('output-shape');
-            const datasetInfo = DATASETS[datasetName];
-            outputShape.textContent = `${datasetInfo.numClasses} classes`;
-
-            progressText.textContent = `${datasetName.toUpperCase()} loaded successfully`;
-
-            // Load sample images
-            await this.loadSampleImages();
-
-            // Show first image in input preview
-            this.updateInputPreview(0);
-
+            this.showStatus(`${datasetName.toUpperCase()} loaded successfully`);
         } catch (error) {
             console.error('Failed to load dataset:', error);
-            progressText.textContent = `Failed to load ${datasetName}`;
+            this.showStatus(`Failed to load ${datasetName}`);
         }
-    }
-
-    async loadSampleImages() {
-        const grid = document.getElementById('sample-grid');
-        grid.innerHTML = '';
-
-        const samples = this.dataLoader.getSampleImages(10);
-        if (!samples) return;
-
-        const datasetInfo = this.dataLoader.getDatasetInfo();
-        const isColor = datasetInfo.inputShape[2] === 3;
-
-        samples.forEach((sample, index) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'sample-image';
-            wrapper.title = `Label: ${datasetInfo.labels[sample.label]}`;
-
-            const canvas = document.createElement('canvas');
-            ImageRenderer.renderToCanvas(canvas, sample.image, isColor);
-
-            wrapper.appendChild(canvas);
-            wrapper.addEventListener('click', () => {
-                this.updateInputPreview(sample.index);
-            });
-
-            grid.appendChild(wrapper);
-
-            // Dispose the tensor after rendering
-            sample.image.dispose();
-        });
-    }
-
-    updateInputPreview(imageIndex) {
-        this.selectedImageIndex = imageIndex;
-
-        const sample = this.dataLoader.getImage(imageIndex);
-        if (!sample) return;
-
-        const canvas = document.getElementById('input-preview');
-        const datasetInfo = this.dataLoader.getDatasetInfo();
-
-        ImageRenderer.renderScaled(canvas, sample.image, 56, 56);
-
-        sample.image.dispose();
-
-        // If model is ready, show feature maps
-        this.updateFeatureMaps();
-    }
-
-    onArchitectureChange(layers) {
-        // Could validate architecture here
-        console.log('Architecture updated:', layers.length, 'layers');
-    }
-
-    async startTraining() {
-        const architecture = this.architectureBuilder.getArchitecture();
-
-        if (architecture.length === 0) {
-            this.showStatus('Please add at least one layer to the network');
-            return;
-        }
-
-        // Check if architecture ends with Dense layer (for classification)
-        const hasFlatten = architecture.some(l => l.type === LAYER_TYPES.FLATTEN);
-        const hasDense = architecture.some(l => l.type === LAYER_TYPES.DENSE);
-
-        if (!hasFlatten) {
-            this.showStatus('Add a Flatten layer before Dense layers');
-            return;
-        }
-
-        // Get training parameters
-        const learningRate = Math.pow(10, parseFloat(document.getElementById('learning-rate').value));
-        const epochs = parseInt(document.getElementById('epochs').value);
-        const batchSize = parseInt(document.getElementById('batch-size').value);
-
-        // Get dataset info
-        const datasetInfo = DATASETS[this.currentDataset];
-
-        try {
-            // Build and compile model
-            this.showStatus('Building model...');
-            this.modelEngine.buildModel(architecture, datasetInfo.inputShape, datasetInfo.numClasses);
-            this.modelEngine.compile(learningRate);
-
-            // Update UI
-            this.setTrainingState(true);
-            this.trainingCharts.reset();
-
-            // Start training
-            const trainData = this.dataLoader.trainData;
-
-            await this.modelEngine.train(trainData, { epochs, batchSize }, {
-                onEpochBegin: (epoch) => {
-                    this.showStatus(`Training epoch ${epoch + 1}/${epochs}...`);
-                },
-                onEpochEnd: async (epoch, logs, history) => {
-                    // Update stats
-                    document.getElementById('current-epoch').textContent = `${epoch + 1} / ${epochs}`;
-                    document.getElementById('current-loss').textContent = logs.loss.toFixed(4);
-                    document.getElementById('current-accuracy').textContent = `${(logs.acc * 100).toFixed(1)}%`;
-
-                    // Update progress bar
-                    const progress = ((epoch + 1) / epochs) * 100;
-                    document.getElementById('progress-fill').style.width = `${progress}%`;
-
-                    // Update charts
-                    this.trainingCharts.update(history);
-
-                    // Update feature maps periodically
-                    this.updateFeatureMaps();
-
-                    // Animate connectors
-                    this.animateDataFlow();
-                },
-                onBatchEnd: (batch, logs) => {
-                    // Could update more frequently here
-                }
-            });
-
-            this.showStatus('Training complete!');
-            this.updateOutputPrediction();
-
-        } catch (error) {
-            console.error('Training error:', error);
-            this.showStatus(`Error: ${error.message}`);
-        } finally {
-            this.setTrainingState(false);
-        }
-    }
-
-    stopTraining() {
-        this.modelEngine.stopTraining();
-        this.showStatus('Training stopped');
-    }
-
-    setTrainingState(isTraining) {
-        this.isTraining = isTraining;
-
-        const trainBtn = document.getElementById('train-btn');
-        const stopBtn = document.getElementById('stop-btn');
-
-        trainBtn.style.display = isTraining ? 'none' : 'flex';
-        trainBtn.disabled = isTraining;
-        stopBtn.style.display = isTraining ? 'flex' : 'none';
-
-        // Disable layer buttons during training
-        document.querySelectorAll('.layer-btn').forEach(btn => {
-            btn.disabled = isTraining;
-            btn.style.opacity = isTraining ? 0.5 : 1;
-        });
-    }
-
-    updateFeatureMaps() {
-        if (!this.modelEngine.isReady()) return;
-
-        try {
-            const sample = this.dataLoader.getImage(this.selectedImageIndex);
-            if (!sample) return;
-
-            const activations = this.modelEngine.getActivations(sample.image);
-            this.featureMapRenderer.render(activations);
-
-            // Dispose tensors
-            sample.image.dispose();
-            activations.forEach(a => {
-                if (a.tensor && !a.tensor.isDisposed) {
-                    a.tensor.dispose();
-                }
-            });
-        } catch (error) {
-            console.warn('Could not update feature maps:', error);
-        }
-    }
-
-    updateOutputPrediction() {
-        if (!this.modelEngine.isReady()) return;
-
-        try {
-            const sample = this.dataLoader.getImage(this.selectedImageIndex);
-            if (!sample) return;
-
-            const prediction = this.modelEngine.predict(sample.image);
-            const probs = prediction.dataSync();
-
-            // Update output bars
-            const outputBars = document.getElementById('output-bars');
-            outputBars.innerHTML = '';
-
-            const maxProb = Math.max(...probs);
-
-            for (let i = 0; i < probs.length; i++) {
-                const bar = document.createElement('div');
-                bar.className = 'output-bar';
-                bar.style.width = `${(probs[i] / maxProb) * 100}%`;
-                bar.style.opacity = probs[i] / maxProb;
-                outputBars.appendChild(bar);
-            }
-
-            sample.image.dispose();
-            prediction.dispose();
-        } catch (error) {
-            console.warn('Could not update prediction:', error);
-        }
-    }
-
-    animateDataFlow() {
-        const connectors = document.querySelectorAll('.layer-connector');
-        connectors.forEach((connector, index) => {
-            setTimeout(() => {
-                connector.classList.add('animating');
-                setTimeout(() => {
-                    connector.classList.remove('animating');
-                }, 500);
-            }, index * 100);
-        });
     }
 
     showStatus(text) {
-        document.getElementById('progress-text').textContent = text;
+        const progressText = document.getElementById('progress-text');
+        if (progressText) {
+            progressText.textContent = text;
+        }
     }
 }
 
