@@ -69,12 +69,12 @@ export class DataLoader {
         const testImages = new Float32Array(testSize * imageSize * imageSize);
         const testLabels = new Uint8Array(testSize);
 
+        // MNIST sprite format: 784 pixels wide (28*28 flattened) x 65000 pixels tall
+        // Each row is one complete image, with pixels in row-major order
         for (let i = 0; i < trainSize; i++) {
-            const row = i;
             for (let j = 0; j < imageSize * imageSize; j++) {
-                const x = j % imageSize;
-                const y = Math.floor(j / imageSize);
-                const srcIdx = (row * imageSize + y) * canvas.width * 4 + x * 4;
+                // Each row in the sprite is one flattened image
+                const srcIdx = (i * canvas.width + j) * 4;
                 trainImages[i * imageSize * imageSize + j] = imageData.data[srcIdx] / 255;
             }
             trainLabels[i] = labels[i];
@@ -83,9 +83,7 @@ export class DataLoader {
         for (let i = 0; i < testSize; i++) {
             const row = trainSize + i;
             for (let j = 0; j < imageSize * imageSize; j++) {
-                const x = j % imageSize;
-                const y = Math.floor(j / imageSize);
-                const srcIdx = (row * imageSize + y) * canvas.width * 4 + x * 4;
+                const srcIdx = (row * canvas.width + j) * 4;
                 testImages[i * imageSize * imageSize + j] = imageData.data[srcIdx] / 255;
             }
             testLabels[i] = labels[trainSize + i];

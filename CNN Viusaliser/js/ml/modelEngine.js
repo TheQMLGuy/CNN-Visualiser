@@ -122,16 +122,19 @@ export class ModelEngine {
 
     buildActivationModels() {
         // Dispose previous activation models
-        this.activationModels.forEach(m => m.dispose());
+        this.activationModels.forEach(m => m.model.dispose());
         this.activationModels = [];
 
         if (!this.model) return;
 
-        // Create models that output intermediate activations
+        // Create models that output intermediate activations for ALL layer types
         for (let i = 0; i < this.model.layers.length; i++) {
             const layer = this.model.layers[i];
-            // Only create activation models for conv and pooling layers
-            if (layer.getClassName() === 'Conv2D' || layer.getClassName() === 'MaxPooling2D') {
+            const className = layer.getClassName();
+
+            // Include Conv2D, MaxPooling2D, Flatten, and Dense layers
+            if (className === 'Conv2D' || className === 'MaxPooling2D' ||
+                className === 'Flatten' || className === 'Dense') {
                 try {
                     const activationModel = tf.model({
                         inputs: this.model.input,
@@ -141,7 +144,7 @@ export class ModelEngine {
                         model: activationModel,
                         layerIndex: i,
                         layerName: layer.name,
-                        layerType: layer.getClassName()
+                        layerType: className
                     });
                 } catch (e) {
                     console.warn(`Could not create activation model for layer ${i}:`, e);

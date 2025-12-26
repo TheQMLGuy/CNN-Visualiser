@@ -4,141 +4,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CNN Visualizer - Interactive Neural Network Explorer</title>
+    <title>CNN Platform - Interactive Neural Network Learning</title>
     <meta name="description"
-        content="Learn how Convolutional Neural Networks work through interactive visualization. Explore convolution, pooling, and more.">
+        content="Learn CNNs interactively. Build, train, and explore neural networks in your browser.">
     <link rel="stylesheet" href="styles2.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- TensorFlow.js -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.15.0/dist/tf.min.js"></script>
 </head>
 
 <body>
     <div class="app-container">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="logo">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-                        <rect x="2" y="2" width="28" height="28" rx="6" fill="url(#logo-gradient)" />
-                        <path d="M8 12h4v8H8zM14 10h4v12h-4zM20 8h4v16h-4z" fill="white" opacity="0.9" />
-                        <defs>
-                            <linearGradient id="logo-gradient" x1="0" y1="0" x2="32" y2="32">
-                                <stop offset="0%" stop-color="#667eea" />
-                                <stop offset="100%" stop-color="#764ba2" />
-                            </linearGradient>
-                        </defs>
-                    </svg>
-                </div>
-                <h1>CNN Visualizer</h1>
-            </div>
-            <div class="header-center">
-                <div class="dataset-selector">
-                    <label for="dataset">Dataset:</label>
-                    <select id="dataset">
-                        <option value="mnist">MNIST (Digits)</option>
-                        <option value="cifar10">CIFAR-10 (Objects)</option>
-                    </select>
-                </div>
-            </div>
+        <!-- Minimal Header (only on landing) -->
+        <header class="minimal-header" id="minimal-header">
             <div class="header-right">
                 <div class="status-indicator" id="tf-status">
                     <span class="status-dot"></span>
-                    <span class="status-text">Initializing TensorFlow.js...</span>
+                    <span class="status-text">Loading TensorFlow.js...</span>
                 </div>
             </div>
         </header>
 
-        <!-- Main Content with Tabs -->
-        <main class="main-content">
-            <!-- Left Sidebar - Tab Navigation -->
-            <nav class="tab-nav">
-                <div class="tab-nav-header">
-                    <h2>Learn CNN</h2>
-                </div>
-                <div class="tab-buttons">
-                    <button class="tab-btn active" data-tab="convolution">
-                        <span class="tab-icon">🔲</span>
-                        <span class="tab-label">Convolution</span>
-                        <span class="tab-desc">Kernels & Activation</span>
-                    </button>
-                    <button class="tab-btn" data-tab="pooling">
-                        <span class="tab-icon">📊</span>
-                        <span class="tab-label">Pooling</span>
-                        <span class="tab-desc">Downsampling</span>
-                    </button>
-                    <button class="tab-btn" data-tab="flatten-dense">
-                        <span class="tab-icon">═══</span>
-                        <span class="tab-label">Flatten & Dense</span>
-                        <span class="tab-desc">Fully Connected</span>
-                    </button>
-                    <button class="tab-btn" data-tab="dropout">
-                        <span class="tab-icon">⚫⚪</span>
-                        <span class="tab-label">Dropout</span>
-                        <span class="tab-desc">Regularization</span>
-                    </button>
-                    <div class="tab-divider"></div>
-                    <button class="tab-btn highlight" data-tab="cnn-builder">
-                        <span class="tab-icon">🧪</span>
-                        <span class="tab-label">Full CNN</span>
-                        <span class="tab-desc">Build & Train</span>
-                    </button>
-                </div>
-            </nav>
+        <!-- Landing Page Container -->
+        <div id="landing-container" class="landing-container"></div>
 
-            <!-- Tab Content Area -->
-            <section class="tab-content-area">
-                <div class="tab-content active" id="tab-convolution">
-                    <!-- Convolution Explorer will be rendered here by JS -->
-                    <div class="loading-message">Loading Convolution Explorer...</div>
-                </div>
-                <div class="tab-content" id="tab-pooling">
-                    <div class="loading-message">Loading Pooling Explorer...</div>
-                </div>
-                <div class="tab-content" id="tab-flatten-dense">
-                    <div class="loading-message">Loading Flatten & Dense Explorer...</div>
-                </div>
-                <div class="tab-content" id="tab-dropout">
-                    <div class="loading-message">Loading Dropout Explorer...</div>
-                </div>
-                <div class="tab-content" id="tab-cnn-builder">
-                    <div class="loading-message">Loading CNN Builder...</div>
-                </div>
-            </section>
-        </main>
+        <!-- Mode Content Container -->
+        <div id="mode-container" class="mode-container" style="display: none;"></div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="training-progress" id="training-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
-                </div>
-                <span class="progress-text" id="progress-text">Ready to explore</span>
-            </div>
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <span id="app-status">Initializing...</span>
         </footer>
-    </div>
-
-    <!-- Layer Configuration Modal -->
-    <div class="modal-overlay" id="layer-modal" style="display: none;">
-        <div class="modal">
-            <div class="modal-header">
-                <h3 id="modal-title">Layer Configuration</h3>
-                <button class="modal-close" id="modal-close">&times;</button>
-            </div>
-            <div class="modal-body" id="modal-body">
-                <!-- Dynamic content -->
-            </div>
-            <div class="modal-footer">
-                <button class="secondary-btn" id="modal-cancel">Cancel</button>
-                <button class="primary-btn" id="modal-save">Save</button>
-            </div>
-        </div>
     </div>
 
     <!-- Tooltip -->
     <div class="tooltip" id="tooltip"></div>
 
-    <!-- Scripts -->
     <script type="module" src="js/app2.js"></script>
 </body>
 
